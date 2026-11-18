@@ -909,6 +909,77 @@ body.leaving .login-ui-fade {
   animation: hqRadarSpin 10s linear infinite;
 }
 
+/* Detective HQ Homepage Redesign — Parchment, Pushpin, Gauge & Map Pin Animations */
+@keyframes hqPinPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@keyframes hqButtonSheen {
+  0%, 70%, 100% {
+    transform: translateX(-140%) skewX(-20deg);
+    opacity: 0;
+  }
+  82% {
+    opacity: 0.45;
+  }
+  94% {
+    transform: translateX(220%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes hqGaugeGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(231, 185, 79, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(231, 185, 79, 0.7));
+  }
+}
+
+.hq-pin-pulse {
+  animation: hqPinPulse 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.hq-cta-sheen {
+  animation: hqButtonSheen 4.8s ease-in-out infinite;
+}
+
+.hq-gauge-glow {
+  filter: drop-shadow(0 0 8px rgba(231, 185, 79, 0.38));
+}
+
+.hq-parchment-pinned {
+  background-color: #f3e8cb;
+  background-image:
+    radial-gradient(ellipse 85% 65% at 22% 14%, rgba(255, 252, 240, 0.65), transparent 65%),
+    radial-gradient(ellipse 70% 55% at 88% 92%, rgba(168, 128, 64, 0.16), transparent 65%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 27px,
+      rgba(138, 106, 47, 0.08) 28px
+    );
+  box-shadow:
+    0 22px 46px rgba(3, 12, 9, 0.62),
+    inset 0 0 28px rgba(138, 106, 47, 0.18);
+}
+
+.hq-desk-bezel {
+  background: linear-gradient(145deg, #3c2819 0%, #24170e 52%, #191009 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(231, 185, 79, 0.32),
+    inset 0 -3px 10px rgba(0, 0, 0, 0.65),
+    0 24px 54px rgba(2, 9, 7, 0.78);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

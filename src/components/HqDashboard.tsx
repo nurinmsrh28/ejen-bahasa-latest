@@ -9,7 +9,6 @@ import {
   FileText,
   FolderSearch,
   Lock,
-  LogOut,
   RotateCcw,
   ShieldCheck,
   Sparkles,
@@ -18,7 +17,8 @@ import {
   VolumeX,
   X,
 } from 'lucide-react';
-import latarAkademiImg from '../assets/images/secret_academy_school_1794825908324.jpg';
+import hqOfficeBgImg from '../assets/images/hq_office_bg_1794976530813.jpg';
+import profNurinArtImg from '../assets/images/prof_nurin_detective_1794976531008.jpg';
 import { BADGES, LOCATIONS } from '../game/data';
 import {
   getAgentRank,
@@ -48,11 +48,6 @@ interface HqDashboardProps {
   onLogout: () => void;
 }
 
-// Reuses the exact original uploaded Profesor Nurin photograph
-const PROF_NURIN_PHOTO =
-  '/assets/aistudio/Professor_Detective_in_the_Investigation_Office_54081002.png';
-
-// Session-scoped snapshot key to prevent false completion celebrations on page refresh
 const CELEBRATION_SNAPSHOT_PREFIX = 'ejen_hq_celebration_snapshot_v1:';
 const HOLD_RESET_DURATION_MS = 3000;
 
@@ -64,7 +59,6 @@ interface RankProgressInfo {
 }
 
 function getRankXpProgress(xp: number, finalReportSaved: boolean): RankProgressInfo {
-  // Uses existing getAgentRank thresholds (250 / 600 / 1000 XP or finalReportSaved) without modifying rules.ts
   const currentRank = getAgentRank(xp, finalReportSaved);
   if (finalReportSaved || xp >= 1000) {
     return {
@@ -98,6 +92,17 @@ function getRankXpProgress(xp: number, finalReportSaved: boolean): RankProgressI
   };
 }
 
+const AMBIENT_DUST_MOTES = [
+  { id: 0, left: '6%', top: '16%', size: 4, dur: '7.5s', delay: '0s' },
+  { id: 1, left: '18%', top: '62%', size: 3, dur: '8.4s', delay: '1.2s' },
+  { id: 2, left: '34%', top: '28%', size: 5, dur: '6.9s', delay: '0.6s' },
+  { id: 3, left: '52%', top: '12%', size: 3, dur: '8.2s', delay: '1.8s' },
+  { id: 4, left: '72%', top: '34%', size: 4, dur: '7.1s', delay: '0.9s' },
+  { id: 5, left: '88%', top: '22%', size: 3, dur: '9.0s', delay: '2.1s' },
+  { id: 6, left: '92%', top: '66%', size: 4, dur: '7.8s', delay: '0.3s' },
+  { id: 7, left: '42%', top: '84%', size: 3, dur: '8.7s', delay: '1.5s' },
+];
+
 const SPARKLE_PARTICLES = Array.from({ length: 18 }, (_, i) => {
   const angle = (i / 18) * Math.PI * 2;
   const dist = 75 + ((i * 29) % 115);
@@ -119,7 +124,6 @@ export function HqDashboard({
   onOpenDecisionDrawer,
   onExportJson,
   onResetGame,
-  onLogout,
 }: HqDashboardProps) {
   const [idModalOpen, setIdModalOpen] = useState(false);
   const [teacherOpen, setTeacherOpen] = useState(false);
@@ -129,24 +133,20 @@ export function HqDashboard({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
 
-  // Track highlighted map location for the floating dossier panel (defaults to first uncompleted location)
   const [selectedLocId, setSelectedLocId] = useState<LocationId>(() => {
     const nextOpen = LOCATIONS.find((l) => !state.investigations[l.id].completed);
     return nextOpen ? nextOpen.id : LOCATIONS[0].id;
   });
 
-  // Celebration sparkles & newly unlocked badges
   const [showSparkles, setShowSparkles] = useState(false);
   const [newlyEarnedIds, setNewlyEarnedIds] = useState<string[]>([]);
   const [phaseBannerMsg, setPhaseBannerMsg] = useState<string | null>(null);
 
-  // 3-second hold-to-confirm reset state (with circular countdown ring)
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHoldingReset, setIsHoldingReset] = useState(false);
   const holdRafRef = useRef<number | null>(null);
   const holdStartRef = useRef<number>(0);
 
-  // Reuses existing game state selectors & scoring calculations from src/game/rules.ts
   const completedCount = getCompletedLocationsCount(state);
   const unlockedLevel = getUnlockedPhaseLevel(state);
   const progressPercent = getOverallProgressPercent(state);
@@ -154,12 +154,12 @@ export function HqDashboard({
   const rank = getAgentRank(state.xp, state.finalReportSaved);
   const rankProgress = getRankXpProgress(state.xp, state.finalReportSaved);
 
-  // Reuses existing profile and authentication data bindings
+  const [animatedGaugePct, setAnimatedGaugePct] = useState(0);
+
   const activeProfile = state.profile || authUser.profile;
   const displayName = activeProfile?.name || authUser.username;
   const agentRef = activeProfile?.agentId || authUser.referenceNo;
 
-  // Preserves exact original "Arahan Profesor Nurin" instruction texts per unlockedLevel
   const nurinInstruction = useMemo(() => {
     if (unlockedLevel === 1) {
       return `Pilih mana-mana daripada 4 lokasi di Peta Operasi untuk memulakan penyiasatan (${completedCount}/4 selesai).`;
@@ -176,8 +176,22 @@ export function HqDashboard({
     return 'Pelan Sekolah Impian telah dibina. Lengkapkan Laporan Sekolah Impian sebagai produk akhir!';
   }, [unlockedLevel, completedCount]);
 
-  // Refined typewriter reveal animation (respects prefers-reduced-motion)
   const [typedInstruction, setTypedInstruction] = useState(nurinInstruction);
+
+  // Smooth circular gauge sweep animation on load/update
+  useEffect(() => {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+      setAnimatedGaugePct(progressPercent);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setAnimatedGaugePct(progressPercent);
+    }, 90);
+    return () => window.clearTimeout(timer);
+  }, [progressPercent]);
 
   useEffect(() => {
     const prefersReduced =
@@ -197,12 +211,11 @@ export function HqDashboard({
       if (idx >= nurinInstruction.length) {
         window.clearInterval(timer);
       }
-    }, 18);
+    }, 16);
 
     return () => window.clearInterval(timer);
   }, [nurinInstruction]);
 
-  // Slow ambient parallax on background only (respects prefers-reduced-motion)
   useEffect(() => {
     const prefersReduced =
       typeof window !== 'undefined' &&
@@ -211,8 +224,8 @@ export function HqDashboard({
     if (prefersReduced) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const nx = (e.clientX / window.innerWidth - 0.5) * 12;
-      const ny = (e.clientY / window.innerHeight - 0.5) * 9;
+      const nx = (e.clientX / window.innerWidth - 0.5) * 10;
+      const ny = (e.clientY / window.innerHeight - 0.5) * 8;
       setParallaxOffset({ x: -nx, y: -ny });
     };
 
@@ -220,7 +233,6 @@ export function HqDashboard({
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Optional browser SpeechSynthesis support (Malay language fallback)
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       setSpeechSupported(true);
@@ -232,7 +244,6 @@ export function HqDashboard({
     };
   }, []);
 
-  // Trigger celebration sparkles & completion notice ONLY when transitioning incomplete -> complete
   useEffect(() => {
     const completedPhasesCount = [
       isPhase1Complete(state),
@@ -284,11 +295,10 @@ export function HqDashboard({
         JSON.stringify({ badges: earnedBadges, phases: completedPhasesCount })
       );
     } catch {
-      // Ignore sessionStorage access errors gracefully
+      // Ignore sessionStorage errors
     }
   }, [authUser.username, earnedBadges, state]);
 
-  // Escape key closes Digital Agent ID modal
   useEffect(() => {
     if (!idModalOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -298,7 +308,6 @@ export function HqDashboard({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [idModalOpen]);
 
-  // Cleanup hold-to-reset RAF on unmount
   useEffect(() => {
     return () => {
       if (holdRafRef.current !== null) {
@@ -331,7 +340,6 @@ export function HqDashboard({
     synth.speak(utterance);
   };
 
-  // Preserves original handleContinueAdventure navigation destination logic
   const handleContinueAdventure = () => {
     if (unlockedLevel === 1) {
       const nextLoc = LOCATIONS.find((l) => !state.investigations[l.id].completed) || LOCATIONS[0];
@@ -370,7 +378,6 @@ export function HqDashboard({
         setIsHoldingReset(false);
         setHoldProgress(0);
         setTeacherOpen(false);
-        // Calls the exact original onResetGame handler after 3s hold completion
         onResetGame();
         return;
       }
@@ -380,7 +387,6 @@ export function HqDashboard({
     holdRafRef.current = window.requestAnimationFrame(tick);
   };
 
-  // Preserves original 5-phase progression definitions & unlock checks
   const phases = [
     {
       level: 1,
@@ -452,6 +458,13 @@ export function HqDashboard({
     },
   ];
 
+  const activeNextPhase = phases.find((p) => p.level === unlockedLevel) || phases[0];
+
+  // Circular gauge SVG geometry
+  const gaugeRadius = 54;
+  const gaugeCircumference = 2 * Math.PI * gaugeRadius;
+  const gaugeDashOffset = gaugeCircumference * (1 - animatedGaugePct / 100);
+
   // Circular countdown geometry for 3s hold-to-reset button
   const ringRadius = 15;
   const ringCircumference = 2 * Math.PI * ringRadius;
@@ -463,37 +476,55 @@ export function HqDashboard({
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-x-clip">
-      {/* 03. BACKGROUND – CINEMATIC INVESTIGATION ENVIRONMENT (reuses latar_akademi darkened & blurred on bg layer only) */}
+      {/* 1. CINEMATIC DETECTIVE HEADQUARTERS BACKGROUND */}
       <div
         aria-hidden="true"
-        className="no-print fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#0b2a21]"
+        className="no-print fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#061812]"
       >
         {!bgFailed ? (
           <div
             className="w-full h-full will-change-transform transition-transform duration-700 ease-out"
             style={{
-              transform: `translate3d(${parallaxOffset.x}px, ${parallaxOffset.y}px, 0) scale(1.07)`,
+              transform: `translate3d(${parallaxOffset.x}px, ${parallaxOffset.y}px, 0) scale(1.06)`,
             }}
           >
             <img
-              src={latarAkademiImg}
+              src={hqOfficeBgImg}
               alt=""
               onError={() => setBgFailed(true)}
-              className="w-full h-full object-cover object-center brightness-[0.34] contrast-[1.08] blur-[3px]"
+              className="w-full h-full object-cover object-center brightness-[0.42] contrast-[1.08]"
             />
           </div>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#0b2a21] via-[#15402f] to-[#202923]" />
+          <div className="w-full h-full bg-gradient-to-br from-[#061812] via-[#123829] to-[#1a1510]" />
         )}
 
-        {/* Deep Emerald Colour Grading, Soft Vignette & Subtle Atmospheric Lighting */}
+        {/* Atmospheric Dark Emerald & Warm Desk Lamp Vignette */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse 80% 55% at 50% 16%, rgba(21, 64, 47, 0.44) 0%, rgba(11, 42, 33, 0.80) 64%, rgba(11, 30, 24, 0.94) 100%)',
+              'radial-gradient(ellipse 75% 55% at 50% 18%, rgba(21, 64, 47, 0.42) 0%, rgba(7, 26, 20, 0.84) 62%, rgba(5, 18, 14, 0.96) 100%)',
           }}
         />
+
+        {/* Ambient Floating Golden Dust Motes */}
+        {AMBIENT_DUST_MOTES.map((m) => (
+          <span
+            key={m.id}
+            className="float-mote absolute rounded-full bg-[#E7B94F]/60 shadow-[0_0_8px_rgba(231,185,79,0.55)]"
+            style={
+              {
+                left: m.left,
+                top: m.top,
+                width: `${m.size}px`,
+                height: `${m.size}px`,
+                '--mote-dur': m.dur,
+                '--mote-delay': m.delay,
+              } as React.CSSProperties
+            }
+          />
+        ))}
       </div>
 
       {/* Subtle Gold Sparkles (only triggered on genuine phase/badge completion) */}
@@ -506,7 +537,7 @@ export function HqDashboard({
             {SPARKLE_PARTICLES.map((p) => (
               <span
                 key={p.id}
-                className="hq-sparkle-piece absolute block rounded-full bg-[#c9a24b] shadow-[0_0_8px_rgba(201,162,75,0.85)]"
+                className="hq-sparkle-piece absolute block rounded-full bg-[#E7B94F] shadow-[0_0_8px_rgba(231,185,79,0.85)]"
                 style={
                   {
                     width: `${p.size}px`,
@@ -524,29 +555,35 @@ export function HqDashboard({
       )}
 
       {/* Main Headquarters Layout Container (CSS Focus Selector Target) */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-[calc(3.5rem+env(safe-area-inset-bottom))] space-y-9 text-[#f4ebd0]">
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7 pb-[calc(3.5rem+env(safe-area-inset-bottom))] space-y-7 text-[#f4ebd0]">
         {/* Genuine Mission Completion Notification Banner */}
         {phaseBannerMsg && (
           <div
             role="status"
             aria-live="polite"
-            className="rounded-xl bg-[#15402f] border border-[#c9a24b] px-5 py-3.5 shadow-lg flex items-center gap-3 text-base font-semibold text-[#f4ebd0]"
+            className="rounded-xl bg-[#15402f] border-2 border-[#E7B94F] px-5 py-3.5 shadow-lg flex items-center gap-3 text-base font-semibold text-[#f4ebd0]"
           >
-            <Sparkles className="w-5 h-5 text-[#c9a24b] shrink-0" />
+            <Sparkles className="w-5 h-5 text-[#E7B94F] shrink-0" />
             <span>{phaseBannerMsg}</span>
           </div>
         )}
 
-        {/* 06. HERO SECTION – MISSION COMMAND CENTRE (Dark Emerald Leather Folio + Warm Ivory Briefing Paper) */}
+        {/* 2, 3, 4. TOP COMMAND STAGE: LEFT PROFESOR NURIN · CENTRE BRIEFING · RIGHT PROGRESS */}
         <section
-          aria-label="Pusat Arahan Misi Ejen"
-          className="hq-stage-1 hq-leather-folio relative rounded-2xl border border-[#8a6a2f]/75 overflow-hidden"
+          aria-label="Ibu Pejabat Siasatan Ejen"
+          className="hq-stage-1 hq-leather-folio relative rounded-2xl border-2 border-[#c9a24b]/80 overflow-hidden"
         >
-          {/* Top Engraved Brass & Emerald Classification Strip */}
-          <div className="bg-[#081f18]/90 px-5 sm:px-7 py-3 border-b border-[#8a6a2f]/60 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm font-mono-tabular">
-              <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#c9a24b]">
-                <ShieldCheck className="w-4 h-4 text-[#c9a24b]" />
+          {/* Decorative Antique Gold Inner Frame Line */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-2 rounded-xl border border-[#c9a24b]/25 z-20"
+          />
+
+          {/* Top Classification Strip */}
+          <div className="relative z-10 bg-[#061913]/92 px-5 sm:px-7 py-2.5 border-b border-[#c9a24b]/45 flex flex-wrap items-center justify-between gap-2 text-xs font-mono-tabular">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#E7B94F]">
+                <ShieldCheck className="w-4 h-4 text-[#E7B94F]" />
                 {authUser.accessStatus}
               </span>
               <span aria-hidden="true" className="text-[#8a6a2f]">
@@ -561,95 +598,102 @@ export function HqDashboard({
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl bg-[#202923] hover:bg-[#49221b] border border-[#8a6a2f]/70 text-xs sm:text-sm font-bold text-[#f4ebd0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
-            >
-              <LogOut className="w-4 h-4 text-[#c9a24b]" />
-              <span>Log Keluar</span>
-            </button>
+            <span className="text-[#E7B94F] font-semibold tracking-wider uppercase">
+              FAIL KES: OP-SB-2026
+            </span>
           </div>
 
-          <div className="p-6 sm:p-8 lg:p-9 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column: Original Profesor Nurin Photo in Antique Brass Mentor Frame */}
-            <div className="lg:col-span-4 flex flex-col items-center text-center gap-3.5">
-              <div className="relative p-2 rounded-t-[6rem] rounded-b-2xl bg-gradient-to-b from-[#c9a24b] via-[#8a6a2f] to-[#57411c] shadow-[0_18px_38px_rgba(0,0,0,0.65)]">
-                <div className="w-44 h-52 sm:w-52 sm:h-60 rounded-t-[5.4rem] rounded-b-xl overflow-hidden bg-[#15402f] border-2 border-[#202923]">
-                  {!portraitFailed ? (
-                    <img
-                      src={PROF_NURIN_PHOTO}
-                      alt="Profesor Nurin, Pembimbing HQ Akademi Ejen Bahasa"
-                      referrerPolicy="no-referrer"
-                      onError={() => setPortraitFailed(true)}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#15402f] text-[#c9a24b] px-4">
-                      <span className="font-display text-3xl font-bold">PN</span>
-                      <span className="text-sm text-[#f4ebd0] mt-1">Profesor Nurin</span>
-                    </div>
-                  )}
+          <div className="relative z-10 p-5 sm:p-6 lg:p-7 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* LEFT SECTION (4 cols): LARGE ILLUSTRATED PROFESOR NURIN WITH MAGNIFYING GLASS */}
+            <div className="lg:col-span-4 relative flex flex-col justify-between rounded-2xl overflow-hidden border-2 border-[#c9a24b]/80 bg-[#071f17] shadow-[0_20px_44px_rgba(0,0,0,0.65)] min-h-[380px] lg:min-h-[430px]">
+              {!portraitFailed ? (
+                <img
+                  src={profNurinArtImg}
+                  alt="Ilustrasi Profesor Nurin memegang kanta pembesar di Ibu Pejabat Ejen Bahasa"
+                  referrerPolicy="no-referrer"
+                  onError={() => setPortraitFailed(true)}
+                  className="absolute inset-0 w-full h-full object-cover object-top scale-[1.02]"
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#15402f] to-[#081d15] text-[#E7B94F] px-6 text-center">
+                  <span className="font-display text-5xl font-bold">PN</span>
+                  <span className="text-base text-[#f4ebd0] mt-2 font-semibold">
+                    Profesor Nurin
+                  </span>
                 </div>
+              )}
+
+              {/* Subtle Golden Desk Lamp Vignette Overlay */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061812] via-[#061812]/25 to-transparent"
+              />
+
+              {/* Top Character Tag */}
+              <div className="relative z-10 p-3.5 flex items-center justify-between">
+                <span className="px-2.5 py-1 rounded-md bg-[#061812]/85 border border-[#c9a24b]/65 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#E7B94F]">
+                  MENTOR UTAMA HQ
+                </span>
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={handleToggleVoiceBrief}
+                    className="inline-flex items-center gap-1.5 px-3 min-h-[38px] rounded-xl bg-[#0b2a21]/90 hover:bg-[#164432] border border-[#c9a24b]/75 text-xs font-bold text-[#f4ebd0] transition-colors shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E7B94F]"
+                  >
+                    {isSpeaking ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5 text-[#E7B94F]" />
+                        <span>Henti</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-[#E7B94F]" />
+                        <span>Suara</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
-              {/* Brass Nameplate */}
-              <div className="hq-brass-plaque px-4 py-1.5 rounded border border-[#f4ebd0]/30">
-                <p className="font-mono-tabular text-xs font-extrabold tracking-widest uppercase text-[#202923]">
-                  PROFESOR NURIN · PEMBIMBING HQ
+              {/* Engraved Brass Nameplate at Bottom of Portrait */}
+              <div className="relative z-10 p-4 pt-10 flex flex-col items-center text-center gap-1.5">
+                <div className="hq-brass-plaque px-4 py-1.5 rounded-lg border border-[#fff2c6]/60 shadow-lg">
+                  <p className="font-mono-tabular text-xs font-extrabold tracking-widest uppercase text-[#202923]">
+                    PROFESOR NURIN · PEMBIMBING HQ
+                  </p>
+                </div>
+                <p className="text-xs text-[#d6e0d4] font-medium">
+                  Ketua Operasi Akademi Ejen Rahsia
                 </p>
               </div>
-
-              {speechSupported && (
-                <button
-                  type="button"
-                  onClick={handleToggleVoiceBrief}
-                  className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f] text-sm font-semibold text-[#f4ebd0] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
-                >
-                  {isSpeaking ? (
-                    <>
-                      <VolumeX className="w-4 h-4 text-[#c9a24b]" />
-                      <span>HENTI SUARA</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-4 h-4 text-[#c9a24b]" />
-                      <span>DENGAR ARAHAN</span>
-                    </>
-                  )}
-                </button>
-              )}
             </div>
 
-            {/* Right Column: Command Summary, Ivory Briefing Document, Progress & Actions */}
-            <div className="lg:col-span-8 space-y-5">
-              <div className="space-y-1.5">
-                <p className="font-mono-tabular text-xs sm:text-sm font-semibold uppercase tracking-[0.16em] text-[#c9a24b]">
-                  FAIL KES: OP-SB-2026 · {activeProfile?.codenameBadge || 'Anggota Penyiasat'} ·{' '}
-                  {rank}
+            {/* CENTRE TOP (5 cols): WELCOME, PARCHMENT BRIEFING & SAMBUNG PENGEMBARAAN CTA */}
+            <div className="lg:col-span-5 flex flex-col justify-between gap-4 py-1">
+              <div className="space-y-2">
+                <p className="font-mono-tabular text-xs font-bold uppercase tracking-[0.16em] text-[#E7B94F]">
+                  {activeProfile?.codenameBadge || 'Anggota Penyiasat'} · {displayName}
+                  {activeProfile?.className ? ` · Kelas ${activeProfile.className}` : ''}
                 </p>
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#f4ebd0] leading-tight">
+                <h1 className="font-display text-2xl sm:text-3xl xl:text-[2.25rem] font-bold text-[#f4ebd0] leading-[1.12] hq-title-glow">
                   SELAMAT KEMBALI, EJEN!
                 </h1>
-                <p className="text-base text-[#a8b7a6] leading-relaxed">
-                  Anggota Aktif: <strong className="text-[#f4ebd0]">{displayName}</strong>
-                  {activeProfile?.className ? ` · Kelas ${activeProfile.className}` : ''} —
-                  Kemajuan operasi kini pada tahap{' '}
-                  <strong className="text-[#c9a24b] font-mono-tabular">{progressPercent}%</strong>.
+                <p className="text-base sm:text-lg text-[#d7e2d5] font-medium">
+                  Misi Sekolah Seri Bestari menanti anda.
                 </p>
               </div>
 
-              {/* Classified Warm Ivory Briefing Paper Sheet: "Arahan Profesor Nurin" */}
-              <div className="hq-ivory-paper relative rounded-xl border border-[#8a6a2f]/60 p-4 sm:p-5 text-[#202923]">
-                <div className="flex items-center justify-between gap-2 border-b border-[#8a6a2f]/30 pb-2 mb-2.5">
-                  <span className="font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#8a6a2f]">
-                    Arahan Profesor Nurin
+              {/* Parchment-style Briefing Document: "ARAHAN PROFESOR NURIN" */}
+              <div className="hq-parchment-pinned relative rounded-xl border-2 border-[#8a6a2f]/80 p-4 sm:p-5 text-[#202923]">
+                <div className="flex items-center justify-between gap-2 border-b border-[#8a6a2f]/35 pb-2 mb-2.5">
+                  <span className="font-mono-tabular text-xs font-extrabold uppercase tracking-wider text-[#6e501d]">
+                    ARAHAN PROFESOR NURIN
                   </span>
-                  <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-widest text-[#8a6a2f] border border-[#8a6a2f]/50 px-2 py-0.5 rounded-sm">
+                  <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-widest text-[#8c331d] border border-[#8c331d]/60 bg-[#f8ece6] px-2 py-0.5 rounded-sm">
                     SULIT · HQ
                   </span>
                 </div>
-                <p className="text-base sm:text-lg font-medium text-[#202923] leading-relaxed min-h-[3.2rem]">
+                <p className="text-sm sm:text-base font-medium text-[#1f2923] leading-relaxed min-h-[4.2rem]">
                   {typedInstruction}
                   {typedInstruction.length < nurinInstruction.length && (
                     <span
@@ -660,125 +704,210 @@ export function HqDashboard({
                 </p>
               </div>
 
-              {/* Operation & Rank XP Gauges */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-xl bg-[#071e17]/90 border border-[#8a6a2f]/40 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm font-mono-tabular">
-                    <span className="text-[#a8b7a6]">Kemajuan Keseluruhan Operasi</span>
-                    <span className="font-bold text-[#c9a24b]">{progressPercent}%</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-[#202923] border border-[#8a6a2f]/40 overflow-hidden">
-                    <div
-                      className="h-full bg-[#c9a24b] transition-all duration-300"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-[#071e17]/90 border border-[#8a6a2f]/40 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm font-mono-tabular">
-                    <span className="text-[#a8b7a6] truncate pr-2">{rankProgress.label}</span>
-                    <span className="font-bold text-[#c9a24b] shrink-0">
-                      {rankProgress.percent}%
-                    </span>
-                  </div>
-                  <div className="h-3 rounded-full bg-[#202923] border border-[#8a6a2f]/40 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#8a6a2f] via-[#c9a24b] to-[#f4ebd0] transition-all duration-300"
-                      style={{ width: `${rankProgress.percent}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary CTA + Compact Tactile Secondary Controls */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
+              {/* Prominent Golden CTA + Compact Profile Links */}
+              <div className="space-y-3">
                 <button
                   type="button"
                   onClick={handleContinueAdventure}
-                  className="hq-brass-plaque inline-flex items-center justify-center gap-2.5 px-7 min-h-[52px] rounded-xl text-[#202923] font-display font-bold text-base sm:text-lg border border-[#f4ebd0]/50 shadow-[0_12px_28px_rgba(201,162,75,0.34)] transition-transform duration-150 hover:-translate-y-0.5 hover:brightness-105 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4ebd0]"
+                  className="relative overflow-hidden w-full hq-brass-plaque inline-flex items-center justify-center gap-3 px-6 min-h-[54px] rounded-xl text-[#202923] font-display font-extrabold text-base sm:text-lg border-2 border-[#fff0c2]/70 shadow-[0_14px_30px_rgba(201,162,75,0.38)] transition-transform duration-150 hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4ebd0]"
                 >
-                  <span>SAMBUNG PENGEMBARAAN</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <span
+                    aria-hidden="true"
+                    className="hq-cta-sheen pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/45 to-transparent"
+                  />
+                  <span className="relative z-10">SAMBUNG PENGEMBARAAN</span>
+                  <ArrowRight className="relative z-10 w-5 h-5" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => onNavigatePhase('profile')}
-                  className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/75 text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
-                >
-                  <UserCog className="w-4 h-4 text-[#c9a24b]" />
-                  <span>
-                    {activeProfile?.agentId ? 'Kemaskini Identiti Ejen' : 'Daftar Identiti Ejen'}
-                  </span>
-                </button>
-
-                {activeProfile?.agentId && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIdModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/75 text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                    onClick={() => onNavigatePhase('profile')}
+                    className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 px-3.5 min-h-[42px] rounded-xl bg-[#0e3225] hover:bg-[#174836] border border-[#8a6a2f]/75 text-xs sm:text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap"
                   >
-                    <BadgeCheck className="w-4 h-4 text-[#c9a24b]" />
-                    <span>Kad Identiti Digital</span>
+                    <UserCog className="w-4 h-4 text-[#E7B94F]" />
+                    <span>
+                      {activeProfile?.agentId ? 'Kemaskini Identiti' : 'Daftar Identiti Ejen'}
+                    </span>
                   </button>
-                )}
 
+                  {activeProfile?.agentId && (
+                    <button
+                      type="button"
+                      onClick={() => setIdModalOpen(true)}
+                      className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 px-3.5 min-h-[42px] rounded-xl bg-[#0e3225] hover:bg-[#174836] border border-[#8a6a2f]/75 text-xs sm:text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap"
+                    >
+                      <BadgeCheck className="w-4 h-4 text-[#E7B94F]" />
+                      <span>Kad Identiti Digital</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT SECTION (3 cols): COMPACT DARK EMERALD & GOLD OPERATION PROGRESS PANEL */}
+            <aside
+              aria-label="Kemajuan Operasi Ejen"
+              className="lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#0a291f] to-[#061812] border-2 border-[#c9a24b]/75 p-5 flex flex-col justify-between gap-4 shadow-[inset_0_1px_0_rgba(255,244,204,0.12),0_16px_34px_rgba(0,0,0,0.55)]"
+            >
+              <div className="text-center space-y-1 border-b border-[#8a6a2f]/40 pb-3">
+                <p className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.18em] text-[#E7B94F]">
+                  STATUS OPERASI
+                </p>
+                <h2 className="font-display text-lg font-bold text-[#f4ebd0]">
+                  REKOD KEMAJUAN
+                </h2>
+              </div>
+
+              {/* Animated Circular Progress Gauge */}
+              <div className="flex flex-col items-center justify-center py-1">
+                <div className="relative w-32 h-32 flex items-center justify-center hq-gauge-glow">
+                  <svg className="w-32 h-32 -rotate-90" viewBox="0 0 128 128" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="hqGaugeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#FFF0B8" />
+                        <stop offset="50%" stopColor="#E7B94F" />
+                        <stop offset="100%" stopColor="#B48836" />
+                      </linearGradient>
+                    </defs>
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={gaugeRadius}
+                      fill="rgba(7, 25, 19, 0.85)"
+                      stroke="rgba(138, 106, 47, 0.34)"
+                      strokeWidth="10"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={gaugeRadius - 9}
+                      fill="none"
+                      stroke="rgba(231, 185, 79, 0.22)"
+                      strokeWidth="1"
+                      strokeDasharray="3 4"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={gaugeRadius}
+                      fill="none"
+                      stroke="url(#hqGaugeGold)"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      strokeDasharray={gaugeCircumference}
+                      strokeDashoffset={gaugeDashOffset}
+                      style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                    />
+                    <circle cx="118" cy="64" r="3" fill="#FFF0B8" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="font-mono-tabular text-3xl font-extrabold text-[#f4ebd0] leading-none">
+                      {progressPercent}%
+                    </span>
+                    <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#E7B94F] mt-1">
+                      SELESAI
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* XP, Badge Count & Detective Rank Readouts */}
+              <div className="space-y-2.5 text-sm">
+                <div className="rounded-xl bg-[#0e2f23]/85 border border-[#8a6a2f]/45 px-3.5 py-2.5 flex items-center justify-between">
+                  <span className="text-xs font-mono-tabular uppercase tracking-wider text-[#a8b7a6]">
+                    Markah XP
+                  </span>
+                  <span className="font-mono-tabular font-extrabold text-base text-[#E7B94F]">
+                    {state.xp} XP
+                  </span>
+                </div>
+
+                <div className="rounded-xl bg-[#0e2f23]/85 border border-[#8a6a2f]/45 px-3.5 py-2.5 flex items-center justify-between">
+                  <span className="text-xs font-mono-tabular uppercase tracking-wider text-[#a8b7a6]">
+                    Lencana
+                  </span>
+                  <span className="font-mono-tabular font-extrabold text-base text-[#f4ebd0]">
+                    {earnedBadges.length} / {BADGES.length}
+                  </span>
+                </div>
+
+                <div className="rounded-xl bg-[#0e2f23]/85 border border-[#8a6a2f]/45 px-3.5 py-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono-tabular uppercase tracking-wider text-[#a8b7a6]">
+                      Pangkat
+                    </span>
+                    <span className="font-display text-xs font-bold text-[#E7B94F] text-right truncate">
+                      {rank}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#061812] border border-[#8a6a2f]/35 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#8a6a2f] via-[#E7B94F] to-[#fff0b8] transition-all duration-500"
+                      style={{ width: `${rankProgress.percent}%` }}
+                    />
+                  </div>
+                  <p className="font-mono-tabular text-[10px] text-[#a8b7a6] truncate">
+                    {rankProgress.label}
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Dossier Drawers */}
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={onOpenEvidenceDrawer}
-                  className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-[#202923] hover:bg-[#2a362e] border border-[#8a6a2f]/60 text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 min-h-[40px] rounded-xl bg-[#133b2c] hover:bg-[#1a503c] border border-[#8a6a2f]/70 text-xs font-semibold text-[#f4ebd0] transition-colors"
                 >
-                  <FolderSearch className="w-4 h-4 text-[#c9a24b]" />
-                  <span>Fail Bukti Ejen</span>
+                  <FolderSearch className="w-3.5 h-3.5 text-[#E7B94F] shrink-0" />
+                  <span>Fail Bukti</span>
                 </button>
-
                 <button
                   type="button"
                   onClick={onOpenDecisionDrawer}
-                  className="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-[#202923] hover:bg-[#2a362e] border border-[#8a6a2f]/60 text-sm font-semibold text-[#f4ebd0] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 min-h-[40px] rounded-xl bg-[#133b2c] hover:bg-[#1a503c] border border-[#8a6a2f]/70 text-xs font-semibold text-[#f4ebd0] transition-colors"
                 >
-                  <FileText className="w-4 h-4 text-[#c9a24b]" />
-                  <span>Kad Keputusan Ejen</span>
+                  <FileText className="w-3.5 h-3.5 text-[#E7B94F] shrink-0" />
+                  <span>Keputusan</span>
                 </button>
               </div>
-            </div>
+            </aside>
           </div>
         </section>
 
-        {/* 07. SCHOOL INVESTIGATION MAP – LIVE TACTICAL RADAR TABLE & CLASSIFIED CASE FILE */}
+        {/* 5 & 6. CENTRE LARGE ILLUSTRATED SCHOOL MAP + RIGHT PINNED "MISI SETERUSNYA" DOSSIER */}
         <PetaOperasiSection
           state={state}
           completedCount={completedCount}
           selectedLocId={selectedLocId}
           onSelectLocId={setSelectedLocId}
           onNavigatePhase={onNavigatePhase}
+          nextMission={{
+            level: activeNextPhase.level,
+            screen: activeNextPhase.screen,
+            shortTag: activeNextPhase.shortTag,
+            title: activeNextPhase.title,
+            desc: activeNextPhase.desc,
+            status: activeNextPhase.status,
+          }}
         />
 
-        {/* 08. OPERATION PROGRESSION – ANIMATED DETECTIVE TIMELINE & FIVE PHASE CARDS */}
-        <MissionStatusSection
-          phases={phases}
-          unlockedLevel={unlockedLevel}
-          xp={state.xp}
-          soundEnabled={state.soundEnabled}
-          onNavigatePhase={onNavigatePhase}
-        />
-
-        {/* 09. AGENT ACHIEVEMENTS – DARK VELVET MEDAL PRESENTATION COLLECTION */}
+        {/* 7. BOTTOM – DETECTIVE ACHIEVEMENTS (HORIZONTAL METALLIC MEDAL SHOWCASE) */}
         <section
           aria-label="Lencana Ejen"
-          className="hq-stage-3 hq-velvet-tray relative rounded-2xl border border-[#8a6a2f]/75 p-5 sm:p-7 space-y-5"
+          className="hq-stage-3 hq-velvet-tray relative rounded-2xl border-2 border-[#c9a24b]/75 p-5 sm:p-7 space-y-5"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#8a6a2f]/40 pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#8a6a2f]/45 pb-4">
             <div>
-              <p className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#c9a24b]">
-                KOTAK PINGAT KEHORMATAN AKADEMI
+              <p className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#E7B94F]">
+                GALERI PINGAT KEHORMATAN AKADEMI
               </p>
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#f4ebd0]">
-                LENCANA EJEN
+                LENCANA DETEKTIF EJEN
               </h2>
             </div>
-            <span className="inline-flex items-center gap-2 font-mono-tabular text-sm sm:text-base font-bold text-[#c9a24b]">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[#071c15] border border-[#c9a24b]/65 font-mono-tabular text-sm sm:text-base font-bold text-[#E7B94F]">
               <Award className="w-5 h-5" />
               {earnedBadges.length} / {BADGES.length} Diperoleh
             </span>
@@ -791,60 +920,61 @@ export function HqDashboard({
               return (
                 <div
                   key={badge.id}
-                  className={`relative overflow-hidden rounded-xl p-4 border flex flex-col items-center text-center gap-3 ${
+                  className={`relative overflow-hidden rounded-2xl p-4 border-2 flex flex-col items-center text-center gap-3 transition-transform duration-200 hover:-translate-y-1 ${
                     earned
-                      ? 'bg-[#15402f]/90 border-[#c9a24b] shadow-[0_12px_28px_rgba(0,0,0,0.5)]'
-                      : 'bg-[#081b15]/90 border-[#8a6a2f]/35'
+                      ? 'bg-gradient-to-b from-[#174634] to-[#0c291e] border-[#E7B94F] shadow-[0_14px_30px_rgba(0,0,0,0.55),0_0_20px_rgba(231,185,79,0.16)]'
+                      : 'bg-gradient-to-b from-[#0b1f18] to-[#06130f] border-[#8a6a2f]/35'
                   } ${isNew ? 'hq-badge-pop' : ''}`}
                 >
-                  {/* Gentle Metallic Reflection Glint on Earned Medals */}
                   {earned && (
                     <div
                       aria-hidden="true"
-                      className="hq-medal-glint pointer-events-none absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-[#f4ebd0]/25 to-transparent"
+                      className="hq-medal-glint pointer-events-none absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-[#fff5cf]/25 to-transparent"
                     />
                   )}
 
                   {isNew && (
-                    <span className="inline-flex items-center gap-1 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#c9a24b]">
+                    <span className="inline-flex items-center gap-1 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#E7B94F]">
                       <Sparkles className="w-3.5 h-3.5" />
                       BAHARU
                     </span>
                   )}
 
-                  {/* Brass or Bronze Medal Frame */}
-                  <div
-                    className={`relative rounded-full p-2.5 ${
-                      earned
-                        ? 'bg-gradient-to-b from-[#d8b566] via-[#c9a24b] to-[#8a6a2f] shadow-[0_6px_18px_rgba(201,162,75,0.35)]'
-                        : 'bg-[#202923] border-2 border-[#8a6a2f]/45 opacity-60 grayscale'
-                    }`}
-                  >
-                    <div className="rounded-full bg-[#0b2a21] p-1">
-                      <BadgeIconSvg badgeId={badge.id} earned={earned} className="w-14 h-14" />
+                  {/* Laurel-Framed Metallic Medal */}
+                  <div className="relative">
+                    <div
+                      className={`rounded-full p-1.5 ${
+                        earned
+                          ? 'bg-[#092119] ring-2 ring-[#E7B94F]/75 shadow-[0_8px_22px_rgba(231,185,79,0.28)]'
+                          : 'bg-[#101c18] ring-1 ring-[#8a6a2f]/45 opacity-85'
+                      }`}
+                    >
+                      <BadgeIconSvg badgeId={badge.id} earned={earned} className="w-16 h-16" />
                     </div>
                     {!earned && (
                       <span
                         aria-hidden="true"
-                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#202923] border border-[#8a6a2f] flex items-center justify-center text-[#a8b7a6]"
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#17231e] border border-[#8a6a2f]/80 flex items-center justify-center text-[#c9a24b] shadow"
                       >
                         <Lock className="w-3 h-3" />
                       </span>
                     )}
                   </div>
 
-                  {/* Engraved Plaque Title + Requirement */}
-                  <div className="space-y-1.5 w-full">
+                  {/* Brass Nameplate + Requirement */}
+                  <div className="space-y-1.5 w-full flex-1 flex flex-col justify-between">
                     <div
-                      className={`px-2 py-1 rounded ${
-                        earned ? 'hq-brass-plaque text-[#202923]' : 'bg-[#202923] text-[#a8b7a6]'
+                      className={`px-2.5 py-1 rounded-lg ${
+                        earned
+                          ? 'hq-brass-plaque text-[#202923] border border-[#fff0c2]/45'
+                          : 'bg-[#14221d] text-[#c4cfc7] border border-[#8a6a2f]/35'
                       }`}
                     >
                       <p className="font-display text-sm font-bold leading-tight">{badge.name}</p>
                     </div>
                     <p
-                      className={`text-sm leading-snug ${
-                        earned ? 'text-[#f4ebd0]' : 'text-[#a8b7a6]'
+                      className={`text-xs sm:text-[13px] leading-snug ${
+                        earned ? 'text-[#f4ebd0]' : 'text-[#9aa9a0]'
                       }`}
                     >
                       {badge.description}
@@ -856,10 +986,19 @@ export function HqDashboard({
           </div>
         </section>
 
-        {/* 11. TEACHER AND DATA MANAGEMENT – COLLAPSIBLE RUANG GURU WITH 3S CIRCULAR HOLD-TO-RESET */}
+        {/* FIVE-PHASE OPERATION PROGRESSION TIMELINE (Preserves Full 5-Phase Navigation) */}
+        <MissionStatusSection
+          phases={phases}
+          unlockedLevel={unlockedLevel}
+          xp={state.xp}
+          soundEnabled={state.soundEnabled}
+          onNavigatePhase={onNavigatePhase}
+        />
+
+        {/* TEACHER AND DATA MANAGEMENT – COLLAPSIBLE RUANG GURU WITH 3S HOLD-TO-RESET */}
         <section
           aria-label="Ruang Guru dan Pengurusan Data"
-          className="hq-stage-4 rounded-2xl bg-[#202923]/92 border border-[#8a6a2f]/55 shadow-[0_16px_38px_rgba(2,10,8,0.55)] overflow-hidden"
+          className="hq-stage-4 rounded-2xl bg-[#18211c]/95 border border-[#8a6a2f]/60 shadow-[0_16px_38px_rgba(2,10,8,0.55)] overflow-hidden"
         >
           <button
             type="button"
@@ -868,14 +1007,14 @@ export function HqDashboard({
             className="w-full px-5 sm:px-6 py-4 min-h-[56px] flex items-center justify-between gap-4 text-left hover:bg-[#15402f]/45 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
           >
             <div>
-              <p className="font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#c9a24b]">
+              <p className="font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#E7B94F]">
                 FAIL REKOD & ARKIB KES
               </p>
               <h2 className="font-display text-xl font-bold text-[#f4ebd0]">
                 RUANG GURU
               </h2>
             </div>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#c9a24b] shrink-0">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#E7B94F] shrink-0">
               <span>{teacherOpen ? 'Tutup' : 'Buka'}</span>
               <ChevronDown
                 className={`w-5 h-5 transition-transform ${teacherOpen ? 'rotate-180' : ''}`}
@@ -895,22 +1034,21 @@ export function HqDashboard({
                 <button
                   type="button"
                   onClick={onExportJson}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/75 text-[#f4ebd0] text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/75 text-[#f4ebd0] text-sm font-semibold transition-colors"
                 >
-                  <Download className="w-4 h-4 text-[#c9a24b]" />
+                  <Download className="w-4 h-4 text-[#E7B94F]" />
                   <span>Eksport Rekod Murid (JSON)</span>
                 </button>
 
                 <a
                   href="/EJEN_BAHASA.html"
                   download="EJEN_BAHASA.html"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] text-[#f4ebd0] border border-[#8a6a2f]/75 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] text-[#f4ebd0] border border-[#8a6a2f]/75 text-sm font-semibold transition-colors"
                 >
-                  <FileCode2 className="w-4 h-4 text-[#c9a24b]" />
+                  <FileCode2 className="w-4 h-4 text-[#E7B94F]" />
                   <span>Muat Turun Fail Kendiri (EJEN_BAHASA.html)</span>
                 </a>
 
-                {/* 3-Second Press-and-Hold Safeguard with Circular Countdown Ring */}
                 <div className="space-y-2">
                   <button
                     type="button"
@@ -930,9 +1068,8 @@ export function HqDashboard({
                       }
                     }}
                     aria-label="Tekan dan tahan selama 3 saat untuk menetapkan semula operasi"
-                    className="w-full inline-flex items-center justify-center gap-3 px-4 min-h-[52px] rounded-xl bg-[#49231d] hover:bg-[#5c2b23] text-[#f4ebd0] border border-[#c9a24b]/60 text-sm font-bold select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4ebd0]"
+                    className="w-full inline-flex items-center justify-center gap-3 px-4 min-h-[52px] rounded-xl bg-[#49231d] hover:bg-[#5c2b23] text-[#f4ebd0] border border-[#c9a24b]/60 text-sm font-bold select-none transition-colors"
                   >
-                    {/* Visible Circular Countdown Progress Ring */}
                     <span className="relative inline-flex items-center justify-center w-9 h-9 shrink-0">
                       <svg className="w-9 h-9 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
                         <circle
@@ -948,7 +1085,7 @@ export function HqDashboard({
                           cy="18"
                           r={ringRadius}
                           fill="none"
-                          stroke="#c9a24b"
+                          stroke="#E7B94F"
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeDasharray={ringCircumference}
@@ -960,7 +1097,7 @@ export function HqDashboard({
                           {remainingHoldSeconds}
                         </span>
                       ) : (
-                        <RotateCcw className="absolute w-3.5 h-3.5 text-[#c9a24b]" />
+                        <RotateCcw className="absolute w-3.5 h-3.5 text-[#E7B94F]" />
                       )}
                     </span>
 
@@ -980,7 +1117,7 @@ export function HqDashboard({
           )}
         </section>
 
-        {/* 10. DIGITAL AGENT IDENTITY CARD MODAL (Interactive Holographic + Tilt Card) */}
+        {/* DIGITAL AGENT IDENTITY CARD MODAL */}
         {idModalOpen && activeProfile && (
           <div
             role="dialog"
@@ -994,9 +1131,9 @@ export function HqDashboard({
                   type="button"
                   onClick={() => setIdModalOpen(false)}
                   aria-label="Tutup Kad Identiti"
-                  className="inline-flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl bg-[#0b2a21] border border-[#8a6a2f] text-sm font-semibold text-[#f4ebd0] shadow-lg hover:bg-[#15402f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                  className="inline-flex items-center gap-1.5 px-4 min-h-[44px] rounded-xl bg-[#0b2a21] border border-[#8a6a2f] text-sm font-semibold text-[#f4ebd0] shadow-lg hover:bg-[#15402f]"
                 >
-                  <X className="w-4 h-4 text-[#c9a24b]" />
+                  <X className="w-4 h-4 text-[#E7B94F]" />
                   <span>Tutup</span>
                 </button>
               </div>

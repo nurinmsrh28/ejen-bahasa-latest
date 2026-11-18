@@ -367,38 +367,96 @@ export function FacilityIconSvg({
 export function BadgeIconSvg({
   badgeId,
   earned,
-  className = 'w-11 h-11',
+  className = 'w-14 h-14',
 }: {
   badgeId: string;
   earned: boolean;
   className?: string;
 }) {
-  const fill = earned ? '#D49B27' : '#D9D2C2';
-  const rim = earned ? '#183426' : '#8C8577';
-  const center = earned ? '#C2593F' : '#B8B0A0';
+  const gradId = `medalGold-${badgeId}-${earned ? 'on' : 'off'}`;
+  const rim = earned ? '#241709' : '#3a423d';
+  const inner = earned ? '#133a2b' : '#1b231f';
+  const accent = earned ? '#fff3c4' : '#7b857e';
+  const emblemFill = earned ? '#C2593F' : '#535b55';
 
   return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" aria-hidden="true">
-      <circle cx="24" cy="24" r="20" fill={fill} stroke={rim} strokeWidth="2.5" />
-      <circle cx="24" cy="24" r="15" stroke="#FAF6EE" strokeWidth="1.5" strokeDasharray="3 2" />
+    <svg viewBox="0 0 64 64" className={className} fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradId} x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+          {earned ? (
+            <>
+              <stop offset="0%" stopColor="#FFF0B8" />
+              <stop offset="45%" stopColor="#E7B94F" />
+              <stop offset="100%" stopColor="#8A6320" />
+            </>
+          ) : (
+            <>
+              <stop offset="0%" stopColor="#6B726E" />
+              <stop offset="50%" stopColor="#4A524E" />
+              <stop offset="100%" stopColor="#2B312E" />
+            </>
+          )}
+        </linearGradient>
+      </defs>
+
+      {/* Outer Laurel Wreath Leaves */}
+      <g stroke={`url(#${gradId})`} strokeWidth="1.8" strokeLinecap="round">
+        <path d="M13 46C8 39 7 29 11 20" fill="none" />
+        <path d="M51 46C56 39 57 29 53 20" fill="none" />
+        <ellipse cx="9" cy="36" rx="2.4" ry="4.2" transform="rotate(-22 9 36)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="9" cy="27" rx="2.3" ry="4" transform="rotate(-8 9 27)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="13" cy="19" rx="2.2" ry="3.8" transform="rotate(14 13 19)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="15" cy="44" rx="2.4" ry="4.1" transform="rotate(-44 15 44)" fill={`url(#${gradId})`} stroke="none" />
+
+        <ellipse cx="55" cy="36" rx="2.4" ry="4.2" transform="rotate(22 55 36)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="55" cy="27" rx="2.3" ry="4" transform="rotate(8 55 27)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="51" cy="19" rx="2.2" ry="3.8" transform="rotate(-14 51 19)" fill={`url(#${gradId})`} stroke="none" />
+        <ellipse cx="49" cy="44" rx="2.4" ry="4.1" transform="rotate(44 49 44)" fill={`url(#${gradId})`} stroke="none" />
+      </g>
+
+      {/* Metallic Medal Disc */}
+      <circle cx="32" cy="32" r="20" fill={`url(#${gradId})`} stroke={rim} strokeWidth="2.2" />
+      <circle cx="32" cy="32" r="16" fill={inner} stroke={accent} strokeWidth="1.2" strokeOpacity={earned ? 0.85 : 0.3} />
+      <circle cx="32" cy="32" r="13.5" stroke={accent} strokeWidth="0.9" strokeDasharray="2.5 2.5" strokeOpacity={earned ? 0.65 : 0.25} />
+
+      {/* Embossed Achievement Icon */}
       {badgeId === 'mata_helang' && (
-        <circle cx="24" cy="24" r="6.5" fill={center} stroke="#FAF6EE" strokeWidth="2" />
+        <g>
+          <circle cx="31" cy="31" r="6.5" fill={emblemFill} stroke={accent} strokeWidth="1.8" />
+          <path d="M35.8 35.8L40.5 40.5" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
+          <circle cx="29" cy="29" r="1.5" fill={accent} />
+        </g>
       )}
       {badgeId === 'penganalisis_kes' && (
-        <rect x="17" y="16" width="14" height="16" rx="2" fill={center} stroke="#FAF6EE" strokeWidth="1.8" />
+        <g>
+          <rect x="24" y="23" width="16" height="18" rx="2.2" fill={emblemFill} stroke={accent} strokeWidth="1.7" />
+          <line x1="27.5" y1="28.5" x2="36.5" y2="28.5" stroke={accent} strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="27.5" y1="32.5" x2="36.5" y2="32.5" stroke={accent} strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="27.5" y1="36.5" x2="33" y2="36.5" stroke={accent} strokeWidth="1.5" strokeLinecap="round" />
+        </g>
       )}
       {badgeId === 'ahli_logik' && (
-        <polygon points="24,14 33,31 15,31" fill={center} stroke="#FAF6EE" strokeWidth="1.8" />
+        <g>
+          <path d="M32 21V41M24 27H40" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+          <path d="M22 33L25 27L28 33H22Z" fill={emblemFill} stroke={accent} strokeWidth="1.3" />
+          <path d="M36 33L39 27L42 33H36Z" fill={emblemFill} stroke={accent} strokeWidth="1.3" />
+          <rect x="27" y="40" width="10" height="2.5" rx="1" fill={accent} />
+        </g>
       )}
       {badgeId === 'pereka_bestari' && (
-        <path d="M15 28L24 15L33 28H15Z" fill={center} stroke="#FAF6EE" strokeWidth="1.8" />
+        <g>
+          <polygon points="32,20 42,36 22,36" fill={emblemFill} stroke={accent} strokeWidth="1.8" strokeLinejoin="round" />
+          <circle cx="32" cy="31" r="2.2" fill={accent} />
+          <rect x="24" y="38.5" width="16" height="2.5" rx="1" fill={accent} />
+        </g>
       )}
       {badgeId === 'arkitek_impian' && (
         <polygon
-          points="24,12 27.5,19.5 36,20.5 29.8,26.2 31.4,34.5 24,30.4 16.6,34.5 18.2,26.2 12,20.5 20.5,19.5"
-          fill={center}
-          stroke="#FAF6EE"
-          strokeWidth="1.5"
+          points="32,19 35.4,26.8 43.8,27.7 37.5,33.4 39.2,41.6 32,37.4 24.8,41.6 26.5,33.4 20.2,27.7 28.6,26.8"
+          fill={`url(#${gradId})`}
+          stroke={accent}
+          strokeWidth="1.6"
+          strokeLinejoin="round"
         />
       )}
     </svg>

@@ -103,81 +103,105 @@ export function GameHud({
 
   if (isHq) {
     return (
-      <header className="no-print sticky top-0 z-30 bg-[#0b2a21]/95 backdrop-blur-md text-[#f4ebd0] border-b border-[#8a6a2f]/80 shadow-[0_10px_28px_rgba(3,12,9,0.6)] pt-[env(safe-area-inset-top)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
-          {/* Shield Crest + Agent Name & Rank */}
+      <header className="no-print sticky top-0 z-30 bg-gradient-to-b from-[#071e17] to-[#0b2a21] text-[#f4ebd0] border-b-2 border-[#c9a24b]/75 shadow-[0_12px_30px_rgba(3,12,9,0.68)] pt-[env(safe-area-inset-top)]">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+          {/* Left: Shield Crest + Agent Name & Rank */}
           <button
             type="button"
             onClick={() => onNavigate('hq')}
             aria-label="Pusat Operasi Akademi Ejen Bahasa"
-            className="flex items-center gap-2.5 text-left min-w-0 min-h-[44px] hover:opacity-95 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b] rounded-lg pr-1"
+            className="flex items-center gap-2.5 text-left min-w-0 min-h-[44px] hover:opacity-95 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b] rounded-lg pr-1 shrink-0 max-w-[240px] sm:max-w-[280px]"
           >
-            <AcademyEmblem className="w-9 h-9 shrink-0 drop-shadow-[0_2px_6px_rgba(201,162,75,0.3)]" />
+            <AcademyEmblem className="w-10 h-10 shrink-0 drop-shadow-[0_2px_8px_rgba(231,185,79,0.42)]" />
             <div className="min-w-0">
-              <p className="font-display font-bold text-sm sm:text-base truncate text-[#f4ebd0] leading-tight">
+              <p className="font-display font-bold text-sm sm:text-[15px] truncate text-[#f4ebd0] leading-tight">
                 {displayName}
               </p>
-              <p className="text-xs text-[#c9a24b] font-medium truncate">
+              <p className="text-[11px] sm:text-xs text-[#E7B94F] font-medium truncate">
                 {subInfo} · {rank}
               </p>
             </div>
           </button>
 
-          {/* Compact XP Count-Up & Badge Readout */}
-          <div className="hidden sm:flex items-center gap-5 text-sm">
+          {/* Center: Live XP & Badge Counter */}
+          <div className="hidden md:flex items-center gap-4 px-4 py-1.5 rounded-xl bg-[#061812]/90 border border-[#8a6a2f]/65 shadow-inner shrink-0">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[#c9a24b] font-mono-tabular font-semibold uppercase tracking-wider text-xs">
+              <span className="text-[#E7B94F] font-mono-tabular font-bold uppercase tracking-wider text-xs">
                 XP
               </span>
-              <span className="font-mono-tabular font-bold text-base text-[#f4ebd0]">
+              <span
+                data-testid="hud-xp-value"
+                className="font-mono-tabular font-extrabold text-base text-[#f4ebd0]"
+              >
                 {displayedXp}
               </span>
             </div>
-            <span aria-hidden="true" className="text-[#8a6a2f]/60">
+            <span aria-hidden="true" className="text-[#8a6a2f]/70">
               ·
             </span>
             <div className="flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-[#c9a24b]" />
-              <span className="font-mono-tabular font-semibold text-sm text-[#f4ebd0]">
+              <Award className="w-4 h-4 text-[#E7B94F]" />
+              <span
+                data-testid="hud-badge-value"
+                className="font-mono-tabular font-bold text-sm text-[#f4ebd0] whitespace-nowrap"
+              >
                 {badgeCount}/5 Lencana
               </span>
             </div>
           </div>
 
-          {/* Slim Controls: Sound Toggle, Compact "Fail" Dropdown & Log Keluar */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex sm:hidden items-center gap-2 mr-1 text-xs font-mono-tabular text-[#c9a24b] font-bold">
-              <span>{displayedXp} XP</span>
-              <span>·</span>
-              <span>{badgeCount}/5</span>
-            </div>
+          {/* Right: Direct Navigation (Pusat Operasi, Fail Bukti, Kad Keputusan, Sound, Log Keluar) */}
+          <nav
+            aria-label="Navigasi Utama Ejen"
+            className="flex items-center gap-1.5 sm:gap-2 shrink-0"
+          >
+            <button
+              type="button"
+              onClick={() => onNavigate('hq')}
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl bg-[#164432] border border-[#E7B94F]/85 text-xs font-bold text-[#E7B94F] shadow-[0_0_12px_rgba(231,185,79,0.2)] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E7B94F]"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#E7B94F]" />
+              <span>Pusat Operasi</span>
+            </button>
 
             <button
               type="button"
-              onClick={onToggleSound}
-              aria-label={state.soundEnabled ? 'Bisukan bunyi' : 'Aktifkan bunyi'}
-              title={state.soundEnabled ? 'Bisukan bunyi' : 'Aktifkan bunyi'}
-              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/70 text-[#f4ebd0] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+              onClick={onOpenEvidenceDrawer}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl bg-[#113527] hover:bg-[#194b38] border border-[#8a6a2f]/75 hover:border-[#E7B94F] text-xs font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
             >
-              {state.soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-[#c9a24b]" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-[#a8b7a6]" />
-              )}
+              <FolderSearch className="w-3.5 h-3.5 text-[#E7B94F]" />
+              <span>Fail Bukti</span>
             </button>
 
-            <div className="relative" ref={failMenuRef}>
+            <button
+              type="button"
+              onClick={onOpenDecisionDrawer}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl bg-[#113527] hover:bg-[#194b38] border border-[#8a6a2f]/75 hover:border-[#E7B94F] text-xs font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#E7B94F]" />
+              <span>Kad Keputusan</span>
+            </button>
+
+            {/* Mobile compact XP + Fail dropdown (< sm) */}
+            <div className="flex sm:hidden items-center gap-1.5 mr-0.5 text-xs font-mono-tabular text-[#E7B94F] font-bold">
+              <span>{displayedXp} XP</span>
+              <span aria-hidden="true">·</span>
+              <span>{badgeCount}/5</span>
+            </div>
+
+            <div className="relative sm:hidden" ref={failMenuRef}>
               <button
                 type="button"
                 onClick={() => setFailMenuOpen((prev) => !prev)}
                 aria-expanded={failMenuOpen}
                 aria-haspopup="menu"
-                className="inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-xl bg-[#15402f] hover:bg-[#1b4e3a] border border-[#8a6a2f]/70 text-xs sm:text-sm font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                aria-label="Menu Fail dan Pusat Operasi"
+                className="inline-flex items-center gap-1 px-2.5 min-h-[40px] rounded-xl bg-[#113527] hover:bg-[#194b38] border border-[#8a6a2f]/75 text-xs font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
               >
-                <FolderOpen className="w-4 h-4 text-[#c9a24b]" />
-                <span>Fail</span>
+                <FolderOpen className="w-3.5 h-3.5 text-[#E7B94F]" />
+                <span>Menu</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-[#c9a24b] transition-transform ${
+                  className={`w-3 h-3 text-[#E7B94F] transition-transform ${
                     failMenuOpen ? 'rotate-180' : ''
                   }`}
                 />
@@ -187,8 +211,20 @@ export function GameHud({
                 <div
                   role="menu"
                   aria-label="Menu Fail Ejen"
-                  className="absolute right-0 mt-2 w-56 rounded-xl bg-[#0b2a21] border border-[#8a6a2f] shadow-[0_18px_40px_rgba(0,0,0,0.65)] p-1.5 z-50"
+                  className="absolute right-0 mt-2 w-52 rounded-xl bg-[#0b2a21] border border-[#8a6a2f] shadow-[0_18px_40px_rgba(0,0,0,0.7)] p-1.5 z-50"
                 >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setFailMenuOpen(false);
+                      onNavigate('hq');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 min-h-[44px] rounded-lg text-left text-sm font-semibold text-[#E7B94F] hover:bg-[#15402f]"
+                  >
+                    <Compass className="w-4 h-4 shrink-0" />
+                    <span>Pusat Operasi</span>
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -196,10 +232,10 @@ export function GameHud({
                       setFailMenuOpen(false);
                       onOpenEvidenceDrawer();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 min-h-[44px] rounded-lg text-left text-sm font-semibold text-[#f4ebd0] hover:bg-[#15402f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                    className="w-full flex items-center gap-2.5 px-3 min-h-[44px] rounded-lg text-left text-sm font-semibold text-[#f4ebd0] hover:bg-[#15402f]"
                   >
-                    <FolderSearch className="w-4 h-4 text-[#c9a24b] shrink-0" />
-                    <span>Fail Bukti Ejen</span>
+                    <FolderSearch className="w-4 h-4 text-[#E7B94F] shrink-0" />
+                    <span>Fail Bukti</span>
                   </button>
                   <button
                     type="button"
@@ -208,10 +244,10 @@ export function GameHud({
                       setFailMenuOpen(false);
                       onOpenDecisionDrawer();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 min-h-[44px] rounded-lg text-left text-sm font-semibold text-[#f4ebd0] hover:bg-[#15402f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+                    className="w-full flex items-center gap-2.5 px-3 min-h-[44px] rounded-lg text-left text-sm font-semibold text-[#f4ebd0] hover:bg-[#15402f]"
                   >
-                    <FileText className="w-4 h-4 text-[#c9a24b] shrink-0" />
-                    <span>Kad Keputusan Ejen</span>
+                    <FileText className="w-4 h-4 text-[#E7B94F] shrink-0" />
+                    <span>Kad Keputusan</span>
                   </button>
                 </div>
               )}
@@ -219,14 +255,28 @@ export function GameHud({
 
             <button
               type="button"
+              onClick={onToggleSound}
+              aria-label={state.soundEnabled ? 'Bisukan bunyi' : 'Aktifkan bunyi'}
+              title={state.soundEnabled ? 'Bisukan bunyi' : 'Aktifkan bunyi'}
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-xl bg-[#113527] hover:bg-[#194b38] border border-[#8a6a2f]/75 hover:border-[#E7B94F] text-[#f4ebd0] shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+            >
+              {state.soundEnabled ? (
+                <Volume2 className="w-4 h-4 text-[#E7B94F]" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-[#a8b7a6]" />
+              )}
+            </button>
+
+            <button
+              type="button"
               onClick={onLogout}
               aria-label="Log keluar daripada akaun ejen"
-              className="inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-xl bg-[#202923] hover:bg-[#49221b] border border-[#8a6a2f]/65 text-xs sm:text-sm font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
+              className="inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl bg-[#1f2923] hover:bg-[#4c221b] border border-[#8a6a2f]/70 hover:border-[#E7B94F]/80 text-xs font-semibold text-[#f4ebd0] whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a24b]"
             >
-              <LogOut className="w-4 h-4 text-[#c9a24b]" />
-              <span className="hidden xs:inline sm:inline">Log Keluar</span>
+              <LogOut className="w-3.5 h-3.5 text-[#E7B94F]" />
+              <span className="hidden md:inline">Log Keluar</span>
             </button>
-          </div>
+          </nav>
         </div>
       </header>
     );
